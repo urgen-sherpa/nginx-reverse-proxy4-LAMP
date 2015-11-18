@@ -1,0 +1,75 @@
+	#VIRTUALHOST SETTINGS
+server {
+	listen 80;
+	server_name example.com www.example.com;
+	access_log /var/log/nginx/access.log;
+      	error_log  /var/log/nginx/error.log;       
+
+	location ~ \.php$ {
+		proxy_redirect off;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_pass http://localhost:8080;
+        }
+
+        #this is mainly for Mediawiki
+	#as Mediawiki URLs look like: http://example.com/wiki/index.php/blablabla
+	#we have to be sure that all these URLs get redirected to Apache
+	#thanks to: http://forum.nginx.org/read.php?2,215093,215095#msg-215095
+	location /wiki/index.php {
+		proxy_redirect off;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_pass http://localhost:8080;
+	}
+        #Nginx should serve all files except the php ones
+	location / {
+		root /var/www/html;
+	        index index.html index.php;  
+	}
+	location ~ /\.ht {
+                deny all;
+        }
+        }
+server {
+	listen 443 ssl;
+	server_name example.com www.example.com;
+	access_log /var/log/nginx/ssl_access.log;
+      	error_log  /var/log/nginx/ssl_error.log;       
+
+	ssl on;
+        ssl_certificate      /etc/ssl/webserver/server.crt;
+        ssl_certificate_key  /etc/ssl/webserver/server.key;
+        ssl_session_timeout  5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+	#SSLLabs.com suggestion
+        ssl_ciphers EECDH+ECDSA+AESGCM:EECDH+aRSA+AESGCM:ECDH+AES256:DH+AES256:EECDH+ECDSA+SHA384:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA384:EECDH+aRSA+SHA256:EECDH:EDH+aRSA:!RC4:!aNULL:!eNULL:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS;
+        ssl_prefer_server_ciphers on;
+
+	location ~ \.php$ {
+		proxy_redirect off;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_pass https://localhost:8081;
+        }
+	location /wiki/index.php {
+		proxy_redirect off;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_pass https://localhost:8081;
+	}
+        #Nginx should serve all files except the php ones
+	location / {
+		root /var/www/html;
+	        index index.html index.php;
+	}      
+	location ~ /\.ht {
+                deny all;
+        }
+        }
+
